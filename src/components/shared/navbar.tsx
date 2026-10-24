@@ -1,4 +1,3 @@
-// src/components/shared/navbar.tsx
 "use client";
 
 import Link from "next/link";
@@ -35,7 +34,6 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <div className="p-2 bg-red-600 rounded-lg text-white">
             <Ambulance className="w-5 h-5 animate-pulse" />
@@ -45,7 +43,6 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
           <Link href="/" className="hover:text-red-600 transition-colors">হোম</Link>
           <Link href="/services" className="hover:text-red-600 transition-colors">সার্ভিসসমূহ</Link>
@@ -55,7 +52,6 @@ export default function Navbar() {
           <Link href="/contact" className="hover:text-red-600 transition-colors">যোগাযোগ</Link>
         </nav>
 
-        {/* Auth Buttons */}
         <div className="hidden md:flex items-center gap-3">
           {role ? (
             <>
@@ -82,7 +78,6 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           className="md:hidden p-2 text-slate-600"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -91,7 +86,6 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-b bg-white px-4 py-4 space-y-3">
           <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700 font-medium">হোম</Link>
