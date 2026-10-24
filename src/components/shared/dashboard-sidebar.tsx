@@ -4,7 +4,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import { LayoutDashboard, Users, Ambulance, ListOrdered, User, Power, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Ambulance,
+  ListOrdered,
+  User,
+  Power,
+  LogOut,
+  FileText,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardSidebar({ role }: { role: string }) {
@@ -23,6 +32,7 @@ export default function DashboardSidebar({ role }: { role: string }) {
     { href: "/admin/requests", label: "জরুরি কল রিকোয়েস্ট", icon: ListOrdered },
     { href: "/admin/ambulances", label: "অ্যাম্বুলেন্স ফ্লিট", icon: Ambulance },
     { href: "/admin/users", label: "ইউজার ও পারমিশন", icon: Users },
+    { href: "/admin/reports", label: "অডিট ও রিপোর্টস", icon: FileText },
   ];
 
   const callerLinks = [
@@ -34,9 +44,11 @@ export default function DashboardSidebar({ role }: { role: string }) {
   const driverLinks = [
     { href: "/driver", label: "দায়িত্বপ্রাপ্ত ট্রিপ", icon: ListOrdered },
     { href: "/driver/availability", label: "অনলাইন/অফলাইন ডিউটি", icon: Power },
+    { href: "/driver/profile", label: "ড্রাইভার প্রোফাইল", icon: User },
   ];
 
-  const currentLinks = role === "ADMIN" ? adminLinks : role === "DRIVER" ? driverLinks : callerLinks;
+  const currentLinks =
+    role === "ADMIN" ? adminLinks : role === "DRIVER" ? driverLinks : callerLinks;
 
   return (
     <aside className="w-64 border-r bg-white min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between">
