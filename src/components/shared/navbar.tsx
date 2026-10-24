@@ -49,6 +49,7 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
           <Link href="/" className="hover:text-red-600 transition-colors">হোম</Link>
           <Link href="/services" className="hover:text-red-600 transition-colors">সার্ভিসসমূহ</Link>
+          <Link href="/pricing" className="hover:text-red-600 transition-colors">ভাড়ার তালিকা</Link>
           <Link href="/hospitals" className="hover:text-red-600 transition-colors">হাসপাতাল তালিকা</Link>
           <Link href="/about" className="hover:text-red-600 transition-colors">আমাদের সম্পর্কে</Link>
           <Link href="/contact" className="hover:text-red-600 transition-colors">যোগাযোগ</Link>
@@ -95,6 +96,7 @@ export default function Navbar() {
         <div className="md:hidden border-b bg-white px-4 py-4 space-y-3">
           <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700 font-medium">হোম</Link>
           <Link href="/services" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700 font-medium">সার্ভিসসমূহ</Link>
+          <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700 font-medium">ভাড়ার তালিকা</Link>
           <Link href="/hospitals" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700 font-medium">হাসপাতাল তালিকা</Link>
           <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700 font-medium">আমাদের সম্পর্কে</Link>
           <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-slate-700 font-medium">যোগাযোগ</Link>
