@@ -3,173 +3,205 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/axios";
 import { toast } from "sonner";
+import { api } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Trash2, Ambulance, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Ambulance, Plus, Trash2, RefreshCw } from "lucide-react";
 
 export default function AdminAmbulancesPage() {
   const queryClient = useQueryClient();
   const [vehicleNumber, setVehicleNumber] = useState("");
-  const [type, setType] = useState("ICU_AMBULANCE");
+  // ১. ডিফল্ট স্টেট
+  const [type, setType] = useState("ADVANCED_LIFE_SUPPORT");
   const [basePrice, setBasePrice] = useState("2500");
 
-  const { data: ambulances, isLoading } = useQuery({
-    queryKey: ["allAmbulances"],
+  // অ্যাম্বুলেন্স তালিকা ফেচ করা
+  const { data: ambulances, isLoading, refetch } = useQuery({
+    queryKey: ["adminAmbulances"],
     queryFn: async () => {
-      const res = await api.get("/ambulances");
-      return res.data?.data || [];
+      const res = await api.get("/ambulances?page=1&limit=50");
+      return res.data?.data?.result || res.data?.data || [];
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      return api.post("/ambulances", {
-        vehicleNumber,
-        type,
-        basePrice: Number(basePrice),
-        isAvailable: true,
-      });
+  // নতুন অ্যাম্বুলেন্স যোগ করার মিউটেশন
+  const createAmbulanceMutation = useMutation({
+    mutationFn: async (payload: {
+      vehicleNumber: string;
+      type: string;
+      basePrice: number;
+      isAvailable: boolean;
+    }) => {
+      return await api.post("/ambulances", payload);
     },
     onSuccess: () => {
-      toast.success("নতুন অ্যাম্বুলেন্স তালিকাভুক্ত হয়েছে!");
-      queryClient.invalidateQueries({ queryKey: ["allAmbulances"] });
+      toast.success("নতুন অ্যাম্বুলেন্স সফলভাবে ফ্লিটে যুক্ত হয়েছে!");
       setVehicleNumber("");
+      setBasePrice("2500");
+      queryClient.invalidateQueries({ queryKey: ["adminAmbulances"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "যুক্ত করতে ব্যর্থ হয়েছে");
+      const msg = err.response?.data?.message || "Validation Error: সঠিক তথ্য দিন";
+      toast.error(msg);
     },
   });
 
-  const deleteMutation = useMutation({
+  // অ্যাম্বুলেন্স মুছে ফেলার মিউটেশন
+  const deleteAmbulanceMutation = useMutation({
     mutationFn: async (id: string) => {
-      return api.delete(`/ambulances/${id}`);
+      return await api.delete(`/ambulances/${id}`);
     },
     onSuccess: () => {
-      toast.success("অ্যাম্বুলেন্স রিমুভ করা হয়েছে");
-      queryClient.invalidateQueries({ queryKey: ["allAmbulances"] });
+      toast.success("অ্যাম্বুলেন্সটি সফলভাবে মুছে ফেলা হয়েছে");
+      queryClient.invalidateQueries({ queryKey: ["adminAmbulances"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "মুছে ফেলতে ব্যর্থ হয়েছে");
     },
   });
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vehicleNumber.trim()) {
+      toast.error("গাড়ির নম্বর দিন");
+      return;
+    }
+
+    createAmbulanceMutation.mutate({
+      vehicleNumber: vehicleNumber.trim().toUpperCase(),
+      type: type, // পোস্টম্যান অনুযায়ী সঠিক Enum মান
+      basePrice: Number(basePrice), // অবশ্যই সংখ্যা হিসেবে রূপান্তর
+      isAvailable: true,
+    });
+  };
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">অ্যাম্বুলেন্স ফ্লিট ম্যানেজমেন্ট</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">অ্যাম্বুলেন্স ফ্লিট ম্যানেজমেন্ট</h1>
         <p className="text-sm text-slate-500">নতুন অ্যাম্বুলেন্স যুক্ত করুন এবং প্রাপ্যতা পর্যবেক্ষণ করুন</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ফর্ম: নতুন অ্যাম্বুলেন্স যুক্ত */}
-        <Card>
+        {/* ফর্ম সেকশন */}
+        <Card className="border-slate-200 shadow-sm h-fit">
           <CardHeader>
-            <CardTitle className="text-lg">নতুন অ্যাম্বুলেন্স যুক্ত করুন</CardTitle>
+            <CardTitle className="text-lg font-bold">নতুন অ্যাম্বুলেন্স যুক্ত করুন</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-medium">গাড়ির নম্বর / প্লেট</label>
-              <Input
-                placeholder="যেমন: DHAKA-METRO-EM-05"
-                value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value)}
-              />
-            </div>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="vehicleNumber">গাড়ির নম্বর / প্লেট *</Label>
+                <Input
+                  id="vehicleNumber"
+                  value={vehicleNumber}
+                  onChange={(e) => setVehicleNumber(e.target.value)}
+                  placeholder="যেমন: SATKHIRA-METRO-EM-01"
+                  required
+                />
+              </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium">অ্যাম্বুলেন্সের ধরন</label>
-              <select
-                className="w-full border rounded-md p-2 text-sm bg-background"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
+              <div className="space-y-1.5">
+                <Label htmlFor="type">অ্যাম্বুলেন্সের ধরন *</Label>
+                <select
+                  id="type"
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="ADVANCED_LIFE_SUPPORT">Advanced Life Support (ALS / এসি)</option>
+                  <option value="BASIC_LIFE_SUPPORT">Basic Life Support (BLS / নন-এসি)</option>
+                  <option value="ICU_AMBULANCE">ICU অ্যাম্বুলেন্স (লাইফ সাপোর্ট)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="basePrice">ভিত্তি ভাড়া (Base Price) *</Label>
+                <Input
+                  id="basePrice"
+                  type="number"
+                  value={basePrice}
+                  onChange={(e) => setBasePrice(e.target.value)}
+                  placeholder="2500"
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={createAmbulanceMutation.isPending}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold"
               >
-                <option value="ICU_AMBULANCE">ICU অ্যাম্বুলেন্স</option>
-                <option value="AC_AMBULANCE">AC অ্যাম্বুলেন্স</option>
-                <option value="NORMAL_AMBULANCE">সাধারণ নন-এসি</option>
-                <option value="FREEZER_AMBULANCE">ফ্রিজার অ্যাম্বুলেন্স</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium">ভিত্তি ভাড়া (Base Price)</label>
-              <Input
-                type="number"
-                value={basePrice}
-                onChange={(e) => setBasePrice(e.target.value)}
-              />
-            </div>
-
-            <Button
-              className="w-full bg-red-600 hover:bg-red-700"
-              disabled={!vehicleNumber || createMutation.isPending}
-              onClick={() => createMutation.mutate()}
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> অ্যাম্বুলেন্স যুক্ত করুন
-            </Button>
+                <Plus className="w-4 h-4 mr-1.5" />
+                {createAmbulanceMutation.isPending ? "যোগ হচ্ছে..." : "অ্যাম্বুলেন্স যুক্ত করুন"}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 
-        {/* টেবিল: অ্যাম্বুলেন্স তালিকা */}
-        <div className="lg:col-span-2 border rounded-xl bg-white shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>গাড়ি নম্বর</TableHead>
-                <TableHead>ধরন</TableHead>
-                <TableHead>বেস প্রাইস</TableHead>
-                <TableHead>স্ট্যাটাস</TableHead>
-                <TableHead className="text-right">অ্যাকশন</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-red-600" />
-                  </TableCell>
-                </TableRow>
-              ) : ambulances?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">
-                    কোনো অ্যাম্বুলেন্স পাওয়া যায়নি
-                  </TableCell>
-                </TableRow>
-              ) : (
-                ambulances?.map((amb: any) => (
-                  <TableRow key={amb.id}>
-                    <TableCell className="font-semibold text-sm">{amb.vehicleNumber}</TableCell>
-                    <TableCell className="text-xs">{amb.type}</TableCell>
-                    <TableCell>৳{amb.basePrice}</TableCell>
-                    <TableCell>
-                      <Badge variant={amb.isAvailable ? "default" : "secondary"}>
-                        {amb.isAvailable ? "Available" : "On Trip"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => deleteMutation.mutate(amb.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        {/* টেবিল সেকশন */}
+        <Card className="border-slate-200 shadow-sm lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-4">
+            <CardTitle className="text-lg font-bold">নিবন্ধিত ফ্লিট তালিকা</CardTitle>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
+              <RefreshCw className="w-4 h-4" /> রিফ্রেশ
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-32 w-full rounded-lg" />
+            ) : !ambulances || ambulances.length === 0 ? (
+              <p className="text-center py-8 text-sm text-slate-500">কোনো অ্যাম্বুলেন্স পাওয়া যায়নি</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b bg-slate-50 text-xs font-semibold text-slate-600">
+                    <tr>
+                      <th className="p-3">গাড়ি নম্বর</th>
+                      <th className="p-3">ধরন</th>
+                      <th className="p-3">বেস প্রাইস</th>
+                      <th className="p-3">স্ট্যাটাস</th>
+                      <th className="p-3 text-right">অ্যাকশন</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {ambulances.map((amb: any) => (
+                      <tr key={amb.id} className="hover:bg-slate-50">
+                        <td className="p-3 font-semibold text-slate-900">{amb.vehicleNumber}</td>
+                        <td className="p-3 text-slate-600 text-xs">{amb.type}</td>
+                        <td className="p-3 font-medium text-slate-800">৳{amb.basePrice}</td>
+                        <td className="p-3">
+                          <span
+                            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${amb.isAvailable ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
+                              }`}
+                          >
+                            {amb.isAvailable ? "Available" : "Engaged"}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                            onClick={() => deleteAmbulanceMutation.mutate(amb.id)}
+                            disabled={deleteAmbulanceMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

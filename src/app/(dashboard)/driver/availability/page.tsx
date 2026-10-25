@@ -2,71 +2,73 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { api } from "@/lib/axios";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { api } from "@/lib/axios";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Power, CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Power, Shield } from "lucide-react";
 
 export default function DriverAvailabilityPage() {
   const [isAvailable, setIsAvailable] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const toggleMutation = useMutation({
-    mutationFn: async (status: boolean) => {
-      return api.patch("/drivers/availability", { isAvailable: status });
-    },
-    onSuccess: (_, status) => {
-      setIsAvailable(status);
-      toast.success(status ? "আপনি এখন ডিউটিতে আছেন (Online)!" : "আপনি এখন অফলাইনে আছেন!");
-    },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.message || "স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে");
-    },
-  });
+  const toggleDuty = async () => {
+    setLoading(true);
+    const nextStatus = !isAvailable;
+    try {
+      // পোস্টম্যান কালেকশন অনুযায়ী লাইভ এপিআই কল
+      await api.patch("/drivers/availability", {
+        isAvailable: nextStatus,
+      });
+
+      setIsAvailable(nextStatus);
+      toast.success(nextStatus ? "আপনি এখন অনলাইনে আছেন ও নতুন ট্রিপ পাবেন" : "আপনি অফলাইনে চলে গেছেন");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "ডিউটি স্ট্যাটাস পরিবর্তন করতে সমস্যা হয়েছে");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="max-w-md mx-auto p-6 my-10">
-      <Card className="text-center border-slate-200">
-        <CardHeader>
-          <CardTitle className="text-xl">ডিউটি স্ট্যাটাস ম্যানেজমেন্ট</CardTitle>
-          <CardDescription>
-            নতুন ট্রিপের নোটিফিকেশন পেতে আপনার প্রাপ্যতা অন রাখুন
+    <div className="max-w-xl mx-auto py-8 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">ডিউটি স্ট্যাটাস নিয়ন্ত্রণ</h1>
+        <p className="text-sm text-slate-500">আপনার শিফটের ওপর ভিত্তি করে অনলাইন অথবা অফলাইন নির্ধারণ করুন।</p>
+      </div>
+
+      <Card className="border-slate-200 shadow-sm">
+        <CardHeader className="text-center pb-4">
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${
+            isAvailable ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
+          }`}>
+            <Power className="w-10 h-10" />
+          </div>
+          <CardTitle className="text-xl font-bold">
+            {isAvailable ? "অনলাইন (ডিউটিতে আছেন)" : "অফলাইন (বিরতিতে আছেন)"}
+          </CardTitle>
+          <CardDescription className="text-xs">
+            {isAvailable ? "সেন্ট্রাল ডিসপ্যাচ থেকে জরুরি রিকোয়েস্ট সরাসরি আপনার কাছে আসবে" : "নতুন কোনো ট্রিপ আপনার জন্য অ্যাসাইন হবে না"}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6 py-4">
-          <div className="flex flex-col items-center gap-2">
-            {isAvailable ? (
-              <div className="p-4 bg-emerald-100 text-emerald-600 rounded-full">
-                <CheckCircle className="w-12 h-12" />
-              </div>
-            ) : (
-              <div className="p-4 bg-slate-100 text-slate-400 rounded-full">
-                <XCircle className="w-12 h-12" />
-              </div>
-            )}
-            <h3 className="text-lg font-bold">
-              {isAvailable ? "আপনি এখন অ্যাক্টিভ আছেন" : "আপনি অফলাইনে আছেন"}
-            </h3>
-            <p className="text-xs text-slate-500">
-              {isAvailable
-                ? "অ্যাডমিন আপনাকে নতুন ট্রিপ অ্যাসাইন করতে পারবেন"
-                : "নতুন কোনো অ্যাসাইনমেন্ট আসবে না"}
-            </p>
+
+        <CardContent className="space-y-6">
+          <div className="flex justify-center">
+            <Badge variant={isAvailable ? "default" : "secondary"}>
+              {isAvailable ? "অ্যাক্টিভ ও প্রস্তুত" : "ডিউটি বন্ধ"}
+            </Badge>
           </div>
 
           <Button
             size="lg"
-            className={`w-full font-semibold ${
-              isAvailable
-                ? "bg-slate-800 hover:bg-slate-900 text-white"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+            disabled={loading}
+            onClick={toggleDuty}
+            className={`w-full font-bold shadow-md ${
+              isAvailable ? "bg-slate-800 hover:bg-slate-900 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"
             }`}
-            disabled={toggleMutation.isPending}
-            onClick={() => toggleMutation.mutate(!isAvailable)}
           >
-            <Power className="w-4 h-4 mr-2" />
-            {isAvailable ? "অফলাইনে যান (Go Offline)" : "ডিউটি শুরু করুন (Go Online)"}
+            {loading ? "আপডেট হচ্ছে..." : isAvailable ? "অফলাইন মোডে যান" : "অনলাইন মোডে যান"}
           </Button>
         </CardContent>
       </Card>
