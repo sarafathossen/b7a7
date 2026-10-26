@@ -1,4 +1,4 @@
-// src/app/(dashboard)/driver/page.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -24,7 +24,7 @@ export default function DriverDashboard() {
   const queryClient = useQueryClient();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // ১. অ্যাসাইন করা ট্রিপ ফেচ করা
+  
   const {
     data: tripsData,
     isLoading,
@@ -54,7 +54,7 @@ export default function DriverDashboard() {
     refetchOnMount: "always",
   });
 
-  // ২. স্ট্যাটাস আপডেট মিউটেশন
+  
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       return await api.patch(`/emergency-requests/${id}/status`, { status });
@@ -79,7 +79,7 @@ export default function DriverDashboard() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
-      {/* হেডার */}
+    
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -142,7 +142,7 @@ export default function DriverDashboard() {
                 className="border border-slate-200 shadow-sm overflow-hidden bg-white"
               >
                 <CardContent className="p-6">
-                  {/* ব্যাজ ও ভাড়া */}
+                  
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
@@ -183,7 +183,7 @@ export default function DriverDashboard() {
                     </div>
                   </div>
 
-                  {/* ঠিকানা ও কলার তথ্য */}
+                  
                   <div className="pt-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-2 text-sm flex-1">
                       <p className="flex items-start gap-2 text-slate-600">
@@ -211,7 +211,7 @@ export default function DriverDashboard() {
                       </p>
                     </div>
 
-                    {/* ড্রাইভারের ক্রমানুসারে স্ট্যাটাস পরিবর্তন অপশন */}
+                    
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       {/* ১. ASSIGNED -> EN_ROUTE */}
                       {status === "ASSIGNED" && (

@@ -1,4 +1,4 @@
-// src/app/(dashboard)/driver/availability/page.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -17,7 +17,7 @@ export default function DriverAvailabilityPage() {
     setLoading(true);
     const nextStatus = !isAvailable;
     try {
-      // পোস্টম্যান কালেকশন অনুযায়ী লাইভ এপিআই কল
+      
       await api.patch("/drivers/availability", {
         isAvailable: nextStatus,
       });
