@@ -1,4 +1,4 @@
-// src/app/(public)/page.tsx
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,7 +35,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Counter Section */}
+    
       <section className="container mx-auto px-4 sm:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="text-center p-4">
@@ -65,7 +65,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Feature Highlights */}
+      
       <section className="container mx-auto px-4 sm:px-8 space-y-8">
         <div className="text-center max-w-xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-bold">কেন AmbuQuick বেছে নেবেন?</h2>

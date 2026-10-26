@@ -1,4 +1,4 @@
-// src/app/page.tsx
+
 import HomePage from "./(public)/page";
 import PublicLayout from "./(public)/layout";
 

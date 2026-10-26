@@ -1,4 +1,4 @@
-// src/lib/validations/auth.ts
+
 import { z } from "zod";
 
 export const loginSchema = z.object({
@@ -11,8 +11,8 @@ export const registerSchema = z.object({
   email: z.string().email("সঠিক ইমেইল অ্যাড্রেস লিখুন"),
   phone: z.string().regex(/^01[3-9]\d{8}$/, "সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)"),
   password: z.string().min(6, "পাসওয়ার্ড ন্যূনতম ৬ অক্ষরের হতে হবে"),
-  role: z.enum(["CALLER", "DRIVER"], {
-    errorMap: () => ({ message: "দয়া করে আপনার রোল নির্বাচন করুন" }),
+  role: z.enum(['CALLER', 'DRIVER'], {
+    message: 'Invalid role selected',
   }),
 });
 

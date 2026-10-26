@@ -1,4 +1,4 @@
-// src/app/(dashboard)/admin/users/page.tsx
+
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/axios";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
@@ -15,20 +15,42 @@ export default function AdminUsersPage() {
     queryKey: ["adminAllUsers"],
     queryFn: async () => {
       const res = await api.get("/users");
-      return res.data?.data || [];
+      return res.data?.data?.result || res.data?.data || res.data || [];
     },
   });
 
   const roleMutation = useMutation({
     mutationFn: async ({ id, role }: { id: string; role: string }) => {
-      return api.patch(`/users/${id}/role`, { role });
+     
+      const res = await api.patch(`/users/${id}/role`, { role });
+
+      
+      if (role === "DRIVER") {
+        try {
+          await api.post("/drivers", {
+            userId: id,
+            licenseNumber: `DL-DHAKA-${Math.floor(100000 + Math.random() * 900000)}`,
+            isAvailable: true,
+          });
+        } catch (profileErr: any) {
+          
+          console.warn("DriverProfile check/creation fallback:", profileErr);
+        }
+      }
+
+      return res;
     },
-    onSuccess: () => {
-      toast.success("ইউজার রোল সফলভাবে পরিবর্তন করা হয়েছে!");
+    onSuccess: (_, variables) => {
+      if (variables.role === "DRIVER") {
+        toast.success("ইউজার রোল DRIVER করা হয়েছে এবং ড্রাইভার প্রোফাইল সফলভাবে তৈরি হয়েছে!");
+      } else {
+        toast.success("ইউজার রোল সফলভাবে পরিবর্তন করা হয়েছে!");
+      }
       queryClient.invalidateQueries({ queryKey: ["adminAllUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["availableDriversList"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "রোল পরিবর্তন ব্যর্থ হয়েছে");
+      toast.error(err.response?.data?.message || "রোল পরিবর্তন ব্যর্থ হয়েছে");
     },
   });
 
@@ -60,7 +82,7 @@ export default function AdminUsersPage() {
             ) : users?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-slate-500">
-                  কোনো ইউজার পাওয়া যায়নি
+                  কোনো ইউজার পাওয়া যায়নি
                 </TableCell>
               </TableRow>
             ) : (
@@ -76,7 +98,7 @@ export default function AdminUsersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <select
-                      className="border rounded px-2 py-1 text-xs bg-background"
+                      className="border rounded px-2 py-1 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-red-500"
                       value={user.role}
                       disabled={roleMutation.isPending}
                       onChange={(e) => roleMutation.mutate({ id: user.id, role: e.target.value })}

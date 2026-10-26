@@ -1,4 +1,4 @@
-// src/app/(auth)/register/page.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -47,7 +47,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 space-y-6">
         
-        {/* Header */}
+        
         <div className="text-center space-y-2">
           <div className="inline-flex p-3 bg-red-100 text-red-600 rounded-full mb-1">
             <Ambulance className="w-8 h-8" />
@@ -56,7 +56,7 @@ export default function RegisterPage() {
           <p className="text-sm text-slate-500">জরুরি সেবার সাথে যুক্ত হতে তথ্য পূরণ করুন</p>
         </div>
 
-        {/* Form */}
+        
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1">
             <Label htmlFor="name">পুরো নাম</Label>
@@ -113,7 +113,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* Role Selection */}
+          
           <div className="space-y-1">
             <Label htmlFor="role">একাউন্টের ধরন (রোল)</Label>
             <select

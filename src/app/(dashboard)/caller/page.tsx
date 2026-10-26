@@ -1,195 +1,251 @@
-// src/app/(dashboard)/caller/page.tsx
+
 "use client";
 
+import { useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Ambulance, Plus, Clock, MapPin, CreditCard, RefreshCw, CheckCircle2, Ban } from "lucide-react";
-import { useState } from "react";
+import {
+  RefreshCw,
+  Plus,
+  MapPin,
+  Clock,
+  Ban,
+  CreditCard,
+  Loader2,
+} from "lucide-react";
+import Link from "next/link";
 
-export default function CallerDashboardPage() {
+function CallerDashboardContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const [payingId, setPayingId] = useState<string | null>(null);
 
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ["callerRequests"],
+ 
+  useEffect(() => {
+    const payment = searchParams.get("payment");
+    const requestId = searchParams.get("requestId");
+
+    if (payment === "success") {
+      toast.success("পেমেন্ট সফলভাবে সম্পন্ন হয়েছে!", {
+        description: requestId
+          ? `ট্রিপ আইডি: ${requestId.slice(0, 8)}... এর পেমেন্ট PAID হিসেবে নিশ্চিত হয়েছে।`
+          : "আপনার পেমেন্ট সফল হয়েছে।",
+      });
+      queryClient.invalidateQueries({ queryKey: ["myAmbulanceRequests"] });
+      router.replace("/caller");
+    } else if (payment === "failed" || payment === "error") {
+      toast.error("পেমেন্ট সম্পন্ন হতে ব্যর্থ হয়েছে বা বাতিল করা হয়েছে।");
+      router.replace("/caller");
+    }
+  }, [searchParams, queryClient, router]);
+
+  
+  const { data: requests, isLoading, refetch } = useQuery({
+    queryKey: ["myAmbulanceRequests"],
     queryFn: async () => {
-      let apiItems: any[] = [];
-      try {
-        const res = await api.get("/emergency-requests");
-        apiItems = res.data?.data?.result || res.data?.data || res.data || [];
-      } catch (err) {
-        console.warn("API list fallback:", err);
-      }
-
-      const cached = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("caller_requests_cache") || "[]") : [];
-      const merged = [...cached, ...apiItems];
-      return Array.from(new Map(merged.map((item) => [item.id || item._id, item])).values());
+      const res = await api.get("/emergency-requests/my-requests");
+      return res.data?.data?.result || res.data?.data || res.data || [];
     },
+    staleTime: 0,
+    gcTime: 0,
+    refetchInterval: 3000, 
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
   });
 
-  // পোস্টম্যান অনুযায়ী রিকোয়েস্ট বাতিল করার মিউটেশন
-  const cancelRequestMutation = useMutation({
-    mutationFn: async (requestId: string) => {
-      return await api.post(`/emergency-requests/${requestId}/cancel`);
+  
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await api.patch(`/emergency-requests/${id}/cancel`);
     },
-    onSuccess: (_, requestId) => {
-      toast.success("অ্যাম্বুলেন্স রিকোয়েস্টটি সফলভাবে বাতিল করা হয়েছে");
-
-      // লোকাল ক্যাশ থেকে স্ট্যাটাস আপডেট/সিঙ্ক করা
-      if (typeof window !== "undefined") {
-        const cached = JSON.parse(localStorage.getItem("caller_requests_cache") || "[]");
-        const updated = cached.map((item: any) =>
-          item.id === requestId ? { ...item, status: "CANCELLED" } : item
-        );
-        localStorage.setItem("caller_requests_cache", JSON.stringify(updated));
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["callerRequests"] });
-      refetch();
+    onSuccess: () => {
+      toast.success("রিকোয়েস্টটি সফলভাবে বাতিল করা হয়েছে");
+      queryClient.invalidateQueries({ queryKey: ["myAmbulanceRequests"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "রিকোয়েস্ট বাতিল করা সম্ভব হয়নি");
+      toast.error(err.response?.data?.message || "রিকোয়েস্ট বাতিল করতে ব্যর্থ হয়েছে");
     },
   });
 
-  const handlePayment = async (request: any) => {
-    setPayingId(request.id);
-    toast.info("বিকাশ গেটওয়েতে সংযোগ করা হচ্ছে...");
-
-    try {
-      const res = await api.post("/payments/initiate", {
-        requestId: request.id,
-      });
-
-      const gatewayUrl = res.data?.data?.bkashURL || res.data?.data?.paymentUrl || res.data?.paymentUrl;
-      if (gatewayUrl) {
-        window.location.href = gatewayUrl;
+  
+  const paymentMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const res = await api.post("/payments/initiate", { requestId });
+      return res.data?.data || res.data;
+    },
+    onSuccess: (data) => {
+      if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl;
       } else {
-        throw new Error("No URL");
+        toast.error("বিকাশ পেমেন্ট ইউআরএল তৈরি করা সম্ভব হয়নি");
       }
-    } catch {
-      // লোকাল স্যান্ডবক্স ফলব্যাক
-      const trxId = "BKASH" + Math.floor(10000000 + Math.random() * 90000000);
-      window.location.href = `/payment/success?paymentID=${trxId}&status=success&requestId=${request.id}`;
-    } finally {
-      setPayingId(null);
-    }
-  };
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "পেমেন্ট শুরু করতে ব্যর্থ হয়েছে");
+    },
+  });
+
+  const requestList: any[] = Array.isArray(requests) ? requests : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">আমার জরুরি অ্যাম্বুলেন্স রিকোয়েস্ট</h1>
-          <p className="text-sm text-slate-500">আপনার বর্তমান ট্রিপের রিয়্যাল-টাইম স্ট্যাটাস ও পেমেন্ট হিস্ট্রি</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            আমার জরুরি অ্যাম্বুলেন্স রিকোয়েস্ট
+          </h1>
+          <p className="text-xs text-slate-500">
+            আপনার বর্তমান ট্রিপের রিয়্যাল-টাইম স্ট্যাটাস ও পেমেন্ট হিস্ট্রি
+          </p>
         </div>
+
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
-            <RefreshCw className="w-4 h-4" /> রিফ্রেশ
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="text-xs gap-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> রিফ্রেশ
           </Button>
+
           <Link href="/caller/request-ambulance">
-            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white font-medium">
-              <Plus className="w-4 h-4 mr-1.5" /> নতুন অ্যাম্বুলেন্স কল
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs gap-1.5">
+              <Plus className="w-4 h-4" /> নতুন অ্যাম্বুলেন্স কল
             </Button>
           </Link>
         </div>
       </div>
 
+      
       {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-28 w-full rounded-xl" />
+        <div className="py-20 flex justify-center items-center">
+          <Loader2 className="w-8 h-8 animate-spin text-red-600" />
         </div>
-      ) : !data || data.length === 0 ? (
-        <Card className="text-center py-16 border-dashed border-slate-300">
-          <CardContent className="space-y-3">
-            <div className="w-14 h-14 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto">
-              <Ambulance className="w-7 h-7" />
-            </div>
-            <h3 className="font-semibold text-lg text-slate-800">কোনো রিকোয়েস্ট পাওয়া যায়নি</h3>
-            <p className="text-sm text-slate-500">জরুরি অ্যাম্বুলেন্স প্রয়োজন হলে উপরের বাটনে ক্লিক করুন।</p>
-          </CardContent>
+      ) : requestList.length === 0 ? (
+        <Card className="border-dashed p-12 text-center">
+          <p className="text-sm text-slate-500">বর্তমানে আপনার কোনো সক্রিয় রিকোয়েস্ট নেই।</p>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {data.map((req: any, index: number) => {
-            const isCancelled = req.status === "CANCELLED";
-            const isPaid = req.paymentStatus === "PAID" || req.status === "COMPLETED";
-            const fare = Number(req.totalAmount || 2500);
+        <div className="space-y-4">
+          {requestList.map((item: any) => {
+            const isPaid =
+              item.paymentStatus === "PAID" ||
+              item.payment?.status === "PAID" ||
+              item.status === "PAID";
+            const canCancel = item.status === "PENDING" || item.status === "REQUESTED";
+
+            
+            const pickupText =
+              item.pickupLocation ||
+              item.pickupAddress ||
+              item.pickup ||
+              item.location ||
+              "ঠিকানা উল্লেখ নেই";
+
+            const destinationText =
+              item.hospital?.name ||
+              item.hospitalName ||
+              item.destination ||
+              item.destinationAddress ||
+              item.dropoffAddress ||
+              "হাসপাতাল";
 
             return (
-              <Card key={req.id || index} className="border-slate-200 shadow-sm">
-                <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="space-y-2">
+              <Card key={item.id} className="border border-slate-200 shadow-sm overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={req.status === "COMPLETED" ? "default" : isCancelled ? "destructive" : "secondary"}>
-                        {req.status || "PENDING"}
-                      </Badge>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-slate-100 text-slate-700">
+                        {item.status}
+                      </span>
 
-                      {!isCancelled && (
-                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
-                          isPaid ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-pink-50 text-pink-700 border-pink-200"
-                        }`}>
-                          {isPaid ? "বিল পরিশোধিত (PAID)" : "পেমেন্ট বাকি (UNPAID)"}
+                      
+                      {isPaid ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                          পরিশোধিত (PAID)
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600">
+                          পেমেন্ট বাকি (UNPAID)
                         </span>
                       )}
 
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                        {req.priority || "HIGH"} Priority
+                      {item.priority && (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 uppercase">
+                          {item.priority} Priority
+                        </span>
+                      )}
+
+                      <span className="flex items-center gap-1 text-xs text-slate-400 ml-2">
+                        <Clock className="w-3.5 h-3.5" />
+                        {item.createdAt
+                          ? new Date(item.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "সময় পাওয়া যায়নি"}
                       </span>
                     </div>
 
-                    <div className="space-y-1 text-sm text-slate-700">
-                      <p className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-red-500 shrink-0" />
-                        <span className="text-xs text-slate-500 font-medium">পিকআপ:</span>
-                        <span>{req.pickupAddress}</span>
-                      </p>
-                      <p className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
-                        <span className="text-xs text-slate-500 font-medium">গন্তব্য:</span>
-                        <span>{req.destinationAddress}</span>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-400">মোট ভাড়া</p>
+                      <p className="text-xl font-bold text-slate-900">
+                        ৳{item.totalAmount || item.amount || 2500}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex md:flex-col items-end justify-between w-full md:w-auto gap-2 border-t md:border-t-0 pt-3 md:pt-0">
-                    <div className="text-left md:text-right">
-                      <span className="text-xs text-slate-500 block">মোট ভাড়া</span>
-                      <span className="text-xl font-bold text-slate-900">৳{fare.toLocaleString()}</span>
+                  <div className="pt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1.5 text-sm">
+                      
+                      <p className="flex items-center gap-2 text-slate-600">
+                        <MapPin className="w-4 h-4 text-red-500 shrink-0" />
+                        <span className="font-semibold text-slate-800">পিকআপ:</span>{" "}
+                        <span className="text-slate-700 font-mono text-xs">{pickupText}</span>
+                      </p>
+
+                      
+                      <p className="flex items-center gap-2 text-slate-600">
+                        <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
+                        <span className="font-semibold text-slate-800">গন্তব্য:</span>{" "}
+                        <span className="text-slate-700 font-medium">{destinationText}</span>
+                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {/* ক্যানসেল বাটন: শুধুমাত্র PENDING অবস্থায় থাকবে */}
-                      {req.status === "PENDING" && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      {canCancel && (
                         <Button
+                          variant="ghost"
                           size="sm"
-                          variant="outline"
-                          disabled={cancelRequestMutation.isPending}
-                          className="border-red-200 text-red-600 hover:bg-red-50 text-xs gap-1"
-                          onClick={() => cancelRequestMutation.mutate(req.id)}
+                          disabled={cancelMutation.isPending}
+                          onClick={() => cancelMutation.mutate(item.id)}
+                          className="text-xs text-red-600 hover:bg-red-50 gap-1"
                         >
                           <Ban className="w-3.5 h-3.5" /> বাতিল
                         </Button>
                       )}
 
-                      {!isCancelled && (
+                      {!isPaid && (
                         <Button
                           size="sm"
-                          disabled={payingId === req.id || isPaid}
-                          className={`font-semibold gap-1.5 shadow-sm ${
-                            isPaid ? "bg-emerald-600 text-white cursor-default" : "bg-[#D12053] hover:bg-[#b01642] text-white"
-                          }`}
-                          onClick={() => handlePayment(req)}
+                          disabled={paymentMutation.isPending}
+                          onClick={() => paymentMutation.mutate(item.id)}
+                          className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold gap-1.5"
                         >
-                          {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
-                          {isPaid ? "পরিশোধিত" : "bKash পেমেন্ট"}
+                          {paymentMutation.isPending ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CreditCard className="w-3.5 h-3.5" />
+                          )}
+                          bKash পেমেন্ট
                         </Button>
                       )}
                     </div>
@@ -201,5 +257,19 @@ export default function CallerDashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CallerDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+        </div>
+      }
+    >
+      <CallerDashboardContent />
+    </Suspense>
   );
 }

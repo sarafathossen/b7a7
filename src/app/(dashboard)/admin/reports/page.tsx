@@ -1,4 +1,4 @@
-// src/app/(dashboard)/admin/reports/page.tsx
+
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
@@ -43,7 +43,7 @@ export default function AdminReportsPage() {
         </Button>
       </div>
 
-      {/* Summary KPI */}
+      
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
@@ -84,7 +84,7 @@ export default function AdminReportsPage() {
         </Card>
       </div>
 
-      {/* Audit Log Table */}
+      
       <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader>

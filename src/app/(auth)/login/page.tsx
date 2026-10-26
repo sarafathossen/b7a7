@@ -1,180 +1,199 @@
-// src/app/(auth)/login/page.tsx
+
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import Cookies from "js-cookie";
 import { toast } from "sonner";
-import { Ambulance, ShieldAlert, User, Truck, Loader2 } from "lucide-react";
-
-import { loginSchema, LoginFormData } from "@/lib/validations/auth";
 import { api } from "@/lib/axios";
+import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Shield, User, Truck, Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-  });
+  
+  const processLogin = async (loginEmail: string, loginPassword: string) => {
+    if (!loginEmail || !loginPassword) {
+      toast.error("ইমেইল এবং পাসওয়ার্ড প্রদান করুন");
+      return;
+    }
 
-  const executeLogin = async (email: string, pass: string, assignedRole?: string) => {
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", {
-        email,
-        password: pass,
+      
+      localStorage.clear();
+      sessionStorage.clear();
+      Cookies.remove("accessToken", { path: "/" });
+      Cookies.remove("token", { path: "/" });
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
       });
 
-      const { accessToken, refreshToken, user } = res.data?.data || {};
+      
+      const res = await api.post("/auth/login", {
+        email: loginEmail,
+        password: loginPassword,
+      });
 
-      if (accessToken) {
-        Cookies.set("accessToken", accessToken, { expires: 7 });
-        if (refreshToken) Cookies.set("refreshToken", refreshToken, { expires: 30 });
+      const rawData = res.data?.data || res.data;
+      const token = rawData?.accessToken || rawData?.token;
+      const user = rawData?.user || rawData?.profile || rawData;
 
-        const userRole = user?.role || assignedRole;
-        Cookies.set("userRole", userRole, { expires: 7 });
+      if (!token) {
+        throw new Error("টোকেন পাওয়া যায়নি");
+      }
 
-        toast.success("লগইন সফল হয়েছে!");
+      
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      Cookies.set("accessToken", token, { expires: 1, path: "/" });
+      Cookies.set("token", token, { expires: 1, path: "/" });
 
-        if (userRole === "ADMIN") {
-          router.push("/admin");
-        } else if (userRole === "DRIVER") {
-          router.push("/driver");
-        } else {
-          router.push("/caller");
-        }
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      
+      const rawRole = user?.role || rawData?.role || "";
+      const userRole = String(rawRole).trim().toUpperCase();
+
+      toast.success(`${user?.name || "ইউজার"} (${userRole}) হিসেবে লগইন সফল হয়েছে!`);
+
+      if (userRole === "ADMIN") {
+        window.location.replace("/admin");
+      } else if (userRole === "DRIVER") {
+        window.location.replace("/driver");
+      } else {
+        window.location.replace("/caller");
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "লগইন ব্যর্থ হয়েছে। তথ্য যাচাই করুন।");
+      toast.error(err.response?.data?.message || err.message || "লগইন ব্যর্থ হয়েছে");
     } finally {
       setLoading(false);
     }
   };
 
-  const onSubmit = (data: LoginFormData) => {
-    executeLogin(data.email, data.password);
+  
+  const handleManualSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const formEmail = (formData.get("email") as string)?.trim() || email.trim();
+    const formPassword = (formData.get("password") as string) || password;
+    processLogin(formEmail, formPassword);
   };
 
-  const handleQuickDemo = (email: string, pass: string, role: string) => {
-    setValue("email", email);
-    setValue("password", pass);
-    executeLogin(email, pass, role);
+  
+  const handleOneClickDemo = (demoEmail: string, demoPass: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    processLogin(demoEmail, demoPass);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 space-y-6">
-        
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-red-100 text-red-600 rounded-full mb-1">
-            <Ambulance className="w-8 h-8" />
+      <Card className="w-full max-w-md shadow-lg border-slate-200">
+        <CardContent className="p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+              🚑
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">Welcome Back 👋</h1>
+            <p className="text-xs text-slate-500">জরুরি অ্যাম্বুলেন্স সেবায় প্রবেশ করতে লগইন করুন</p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome Back 👋</h1>
-          <p className="text-sm text-slate-500">জরুরি অ্যাম্বুলেন্স সেবায় প্রবেশ করতে লগইন করুন</p>
-        </div>
 
-        {/* Regular Login Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="email">ইমেইল অ্যাড্রেস</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="example@mail.com"
-              {...register("email")}
+          <form onSubmit={handleManualSubmit} className="space-y-4" autoComplete="off">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-700">ইমেইল অ্যাড্রেস</label>
+              <Input
+                name="email"
+                type="email"
+                placeholder="example@mail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-700">পাসওয়ার্ড</label>
+              <Input
+                name="password"
+                type="password"
+                placeholder="••••••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
               disabled={loading}
-            />
-            {errors.email && (
-              <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>
-            )}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              লগইন করুন
+            </Button>
+          </form>
+
+          
+          <div className="space-y-3 pt-2">
+            <div className="relative text-center text-xs text-slate-400 after:content-[''] after:absolute after:top-1/2 after:left-0 after:w-full after:h-[1px] after:bg-slate-200">
+              <span className="bg-white px-2 relative z-10 font-medium">অথবা ১-ক্লিক ডেমো লগইন</span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                className="text-xs gap-1 py-1.5 hover:border-red-500 hover:text-red-600 transition-colors"
+                onClick={() => handleOneClickDemo("admin@example.com", "Admin@password123")}
+              >
+                <Shield className="w-3.5 h-3.5 text-red-600" /> Admin
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                className="text-xs gap-1 py-1.5 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                onClick={() => handleOneClickDemo("caller@example.com", "Caller@password123")}
+              >
+                <User className="w-3.5 h-3.5 text-blue-600" /> Caller
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                className="text-xs gap-1 py-1.5 hover:border-emerald-500 hover:text-emerald-600 transition-colors"
+                onClick={() => handleOneClickDemo("driver@example.com", "Driver@password123")}
+              >
+                <Truck className="w-3.5 h-3.5 text-emerald-600" /> Driver
+              </Button>
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="password">পাসওয়ার্ড</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              {...register("password")}
-              disabled={loading}
-            />
-            {errors.password && (
-              <p className="text-xs text-red-500 font-medium">{errors.password.message}</p>
-            )}
+          <div className="text-center text-xs text-slate-500">
+            নতুন একাউন্ট খুলতে চান?{" "}
+            <Link href="/register" className="font-semibold text-red-600 hover:underline">
+              রেজিস্টার করুন
+            </Link>
           </div>
-
-          <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            লগইন করুন
-          </Button>
-        </form>
-
-        {/* One-Click Quick Demo Login Section */}
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-3 text-slate-500 font-medium">অথবা কুইক ডেমো লগইন</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex flex-col h-auto py-2.5 items-center gap-1 hover:border-red-500 hover:bg-red-50"
-            onClick={() => handleQuickDemo("admin@example.com", "Admin@password123", "ADMIN")}
-            disabled={loading}
-          >
-            <ShieldAlert className="w-4 h-4 text-purple-600" />
-            <span className="text-xs font-semibold">Admin</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="flex flex-col h-auto py-2.5 items-center gap-1 hover:border-red-500 hover:bg-red-50"
-            onClick={() => handleQuickDemo("caller@example.com", "Caller@password123", "CALLER")}
-            disabled={loading}
-          >
-            <User className="w-4 h-4 text-blue-600" />
-            <span className="text-xs font-semibold">Caller</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="flex flex-col h-auto py-2.5 items-center gap-1 hover:border-red-500 hover:bg-red-50"
-            onClick={() => handleQuickDemo("driver@example.com", "Driver@password123", "DRIVER")}
-            disabled={loading}
-          >
-            <Truck className="w-4 h-4 text-amber-600" />
-            <span className="text-xs font-semibold">Driver</span>
-          </Button>
-        </div>
-
-        <p className="text-center text-xs text-slate-500">
-          নতুন একাউন্ট খুলতে চান?{" "}
-          <Link href="/register" className="font-semibold text-red-600 hover:underline">
-            রেজিস্টার করুন
-          </Link>
-        </p>
-
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

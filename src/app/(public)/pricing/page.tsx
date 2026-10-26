@@ -1,4 +1,4 @@
-// src/app/(public)/pricing/page.tsx
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, HelpCircle, ShieldAlert } from "lucide-react";
@@ -60,7 +60,7 @@ export default function PricingPage() {
 
   return (
     <div className="container mx-auto px-4 sm:px-8 py-12 space-y-16 max-w-5xl">
-      {/* Title */}
+     
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <h1 className="text-3xl font-extrabold text-slate-900">স্বচ্ছ ও নির্ধারিত অ্যাম্বুলেন্স ভাড়া</h1>
         <p className="text-sm text-slate-500">
@@ -68,7 +68,7 @@ export default function PricingPage() {
         </p>
       </div>
 
-      {/* Pricing Cards */}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((p, idx) => (
           <Card
@@ -105,7 +105,7 @@ export default function PricingPage() {
         ))}
       </div>
 
-      {/* FAQs */}
+      
       <div className="space-y-6 max-w-3xl mx-auto">
         <h2 className="text-2xl font-bold text-center flex items-center justify-center gap-2">
           <HelpCircle className="w-6 h-6 text-red-600" /> সচরাচর জিজ্ঞাসিত প্রশ্ন (FAQ)

@@ -1,4 +1,4 @@
-// src/components/shared/footer.tsx
+
 import Link from "next/link";
 import { Ambulance, PhoneCall, Mail, MapPin } from "lucide-react";
 

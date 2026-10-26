@@ -1,11 +1,11 @@
-// src/app/(public)/about/page.tsx
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Ambulance, ShieldCheck, HeartPulse, Award, Users } from "lucide-react";
 
 export default function AboutPage() {
   return (
     <div className="container mx-auto px-4 sm:px-8 py-12 space-y-12 max-w-5xl">
-      {/* Intro */}
+      
       <div className="text-center space-y-4 max-w-2xl mx-auto">
         <span className="text-xs font-bold text-red-600 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full">
           আমাদের লক্ষ্য ও উদ্দেশ্য
@@ -18,7 +18,7 @@ export default function AboutPage() {
         </p>
       </div>
 
-      {/* Mission Cards */}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-slate-200">
           <CardContent className="p-6 space-y-3">
@@ -57,7 +57,7 @@ export default function AboutPage() {
         </Card>
       </div>
 
-      {/* Story Section */}
+      
       <div className="bg-slate-50 p-8 rounded-2xl border space-y-4">
         <h2 className="text-2xl font-bold text-slate-800">কেন আমরা এই প্ল্যাটফর্ম গড়ে তুলেছি?</h2>
         <p className="text-sm text-slate-600 leading-relaxed">

@@ -1,4 +1,4 @@
-// src/app/(public)/contact/page.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -35,7 +35,7 @@ export default function ContactPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Emergency Info Card */}
+        
         <div className="space-y-6">
           <Card className="border-red-200 bg-red-50/50">
             <CardContent className="p-6 space-y-4">
@@ -71,7 +71,7 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* Message Form */}
+        
         <Card className="border-slate-200 shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg font-bold">বার্তা বা মতামত পাঠান</CardTitle>

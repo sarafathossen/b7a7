@@ -1,4 +1,4 @@
-// src/app/(dashboard)/admin/requests/page.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -32,7 +32,7 @@ export default function AdminRequestsPage() {
   const [driverId, setDriverId] = useState("");
   const [ambulanceId, setAmbulanceId] = useState("");
 
-  // ১. রিকোয়েস্ট লিস্ট ফেচ
+  
   const { data: requests, isLoading } = useQuery({
     queryKey: ["adminRequestsList", searchTerm],
     queryFn: async () => {
@@ -41,7 +41,7 @@ export default function AdminRequestsPage() {
     },
   });
 
-  // ২. অ্যাম্বুলেন্স লিস্ট ফেচ (অ্যাসাইন করার ড্রপডাউনের জন্য)
+  
   const { data: ambulances } = useQuery({
     queryKey: ["availableAmbulances"],
     queryFn: async () => {
@@ -50,18 +50,18 @@ export default function AdminRequestsPage() {
     },
   });
 
-  // ২.১. ড্রাইভার লিস্ট ফেচ (ড্রপডাউনে স্বয়ংক্রিয়ভাবে দেখানোর জন্য)
- // ২.১. ড্রাইভার লিস্ট ফেচ (DriverProfile আইডি নিশ্চিত করা)
+  
+ 
   const { data: drivers, isLoading: isDriversLoading } = useQuery({
     queryKey: ["availableDriversList"],
     queryFn: async () => {
       try {
-        // ১. সরাসরি ড্রাইভার প্রোফাইল লিস্ট ট্রাই করা
+        
         const res = await api.get("/drivers");
         const list = res.data?.data?.result || res.data?.data || [];
         if (Array.isArray(list) && list.length > 0) {
           return list.map((d: any) => ({
-            id: d.id, // DriverProfile ID
+            id: d.id, 
             name: d.user?.name || d.name || "অফিসিয়াল ড্রাইভার",
             phone: d.user?.phone || d.phone || "",
           }));
@@ -71,13 +71,13 @@ export default function AdminRequestsPage() {
       }
 
       try {
-        // ২. ইউজারদের ভেতর থেকে driverProfile রিলেশন খোঁজা
+        
         const resUser = await api.get("/users");
         const userList = resUser.data?.data?.result || resUser.data?.data || [];
         const validDrivers = userList
           .filter((u: any) => u.role === "DRIVER" && (u.driverProfile?.id || u.driver?.id))
           .map((u: any) => ({
-            id: u.driverProfile?.id || u.driver?.id, // নিশ্চিত DriverProfile ID
+            id: u.driverProfile?.id || u.driver?.id, 
             name: u.name,
             phone: u.phone,
           }));
@@ -87,7 +87,7 @@ export default function AdminRequestsPage() {
         console.warn("User profile fetch failed:", err);
       }
 
-      // ৩. আপনার প্রিজমা ডাটাবেজে ইতিমধ্যে সফলভাবে থাকা মূল ড্রাইভার প্রোফাইল আইডি
+      
       return [
         {
           id: "3c72cfac-1f50-424f-a720-d3cf1f511796",
@@ -98,7 +98,7 @@ export default function AdminRequestsPage() {
     },
   });
 
-  // ৩. অ্যাসাইন করার মিউটেশন
+  
   const assignMutation = useMutation({
     mutationFn: async () => {
       return api.post(`/emergency-requests/${selectedRequest?.id}/assign`, {
@@ -195,7 +195,7 @@ export default function AdminRequestsPage() {
         </Table>
       </div>
 
-      {/* Assign Modal Dialog */}
+     
       <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
         <DialogContent>
           <DialogHeader>
@@ -224,7 +224,7 @@ export default function AdminRequestsPage() {
               </select>
             </div>
 
-            {/* ড্রাইভার আইডি ইনপুটের জায়গায় ড্রপডাউন মেনু */}
+           
             <div className="space-y-1">
               <label className="text-sm font-medium">ড্রাইভার নির্বাচন করুন</label>
               <select

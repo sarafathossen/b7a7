@@ -1,4 +1,4 @@
-// src/app/(dashboard)/admin/ambulances/page.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -16,11 +16,11 @@ import { Ambulance, Plus, Trash2, RefreshCw } from "lucide-react";
 export default function AdminAmbulancesPage() {
   const queryClient = useQueryClient();
   const [vehicleNumber, setVehicleNumber] = useState("");
-  // ১. ডিফল্ট স্টেট
+  
   const [type, setType] = useState("ADVANCED_LIFE_SUPPORT");
   const [basePrice, setBasePrice] = useState("2500");
 
-  // অ্যাম্বুলেন্স তালিকা ফেচ করা
+ 
   const { data: ambulances, isLoading, refetch } = useQuery({
     queryKey: ["adminAmbulances"],
     queryFn: async () => {
@@ -29,7 +29,7 @@ export default function AdminAmbulancesPage() {
     },
   });
 
-  // নতুন অ্যাম্বুলেন্স যোগ করার মিউটেশন
+  
   const createAmbulanceMutation = useMutation({
     mutationFn: async (payload: {
       vehicleNumber: string;
@@ -51,7 +51,7 @@ export default function AdminAmbulancesPage() {
     },
   });
 
-  // অ্যাম্বুলেন্স মুছে ফেলার মিউটেশন
+  
   const deleteAmbulanceMutation = useMutation({
     mutationFn: async (id: string) => {
       return await api.delete(`/ambulances/${id}`);
@@ -74,8 +74,8 @@ export default function AdminAmbulancesPage() {
 
     createAmbulanceMutation.mutate({
       vehicleNumber: vehicleNumber.trim().toUpperCase(),
-      type: type, // পোস্টম্যান অনুযায়ী সঠিক Enum মান
-      basePrice: Number(basePrice), // অবশ্যই সংখ্যা হিসেবে রূপান্তর
+      type: type, 
+      basePrice: Number(basePrice), 
       isAvailable: true,
     });
   };
@@ -88,7 +88,7 @@ export default function AdminAmbulancesPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ফর্ম সেকশন */}
+       
         <Card className="border-slate-200 shadow-sm h-fit">
           <CardHeader>
             <CardTitle className="text-lg font-bold">নতুন অ্যাম্বুলেন্স যুক্ত করুন</CardTitle>
@@ -144,7 +144,7 @@ export default function AdminAmbulancesPage() {
           </CardContent>
         </Card>
 
-        {/* টেবিল সেকশন */}
+        
         <Card className="border-slate-200 shadow-sm lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-4">
             <CardTitle className="text-lg font-bold">নিবন্ধিত ফ্লিট তালিকা</CardTitle>
